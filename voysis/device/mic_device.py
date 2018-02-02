@@ -1,0 +1,59 @@
+import sys
+import threading
+
+import pyaudio
+
+import voysis.config as config
+from voysis.device.device import Device
+
+is_py2 = sys.version[0] == '2'
+if is_py2:
+    import Queue as Queue
+else:
+    import queue as Queue
+
+class MicDevice(Device):
+    def __init__(self, client):
+        Device.__init__(self)
+        self.pyaudio_instance = pyaudio.PyAudio()
+        self.queue = Queue.Queue()
+        self.quit_event = threading.Event()
+        self.channels = config.get_int(config.MIC, 'channels', 1)
+        self.sample_rate = config.get_int(config.MIC, 'sample_rate', 16000)
+        self.audio_format = config.get_int(config.MIC, 'audio_format', pyaudio.paInt16)
+        self.client = client
+        self.device_index = None
+
+    def _callback(self, in_data, frame_count, time_info, status):
+        self.queue.put(in_data)
+        return None, pyaudio.paContinue
+
+    def start_recording(self):
+        self.stream = self.pyaudio_instance.open(
+            input = True,
+            start = False,
+            format=self.audio_format,
+            channels=self.channels,
+            rate=self.sample_rate,
+            frames_per_buffer = self.chunk_size,
+            stream_callback = self._callback,
+            input_device_index = self.device_index
+        )
+        self.queue.queue.clear()
+        self.stream.start_stream()
+
+    def stop_recording(self):
+        self.stream.stop_stream()
+        self.quit_event.set()
+
+    def generate_frames(self):
+        self.quit_event.clear()
+        try:
+            while not self.quit_event.is_set():
+                frames = self.queue.get()
+                if not frames:
+                    break
+                yield frames
+        except StopIteration:
+            self.stream.close()
+            self.pyaudio_instance.terminate()
