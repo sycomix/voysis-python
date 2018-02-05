@@ -1,4 +1,6 @@
 import configparser
+import os
+from string import Template
 
 Config = configparser.ConfigParser()
 GENERAL = 'general'
@@ -48,8 +50,8 @@ def load_config(config_file):
 
 def get(section, name, default):
     try:
-        value = Config.get(section, name)
-        return value
+        value = Template(Config.get(section, name))
+        return value.substitute(os.environ)
     except:
         return default
 
