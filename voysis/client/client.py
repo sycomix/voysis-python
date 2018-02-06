@@ -151,13 +151,7 @@ class Client(object):
         return entity
 
     def _update_current_context(self, query):
-        # TODO: clients should be completely dumb about context.
-        # Keeping this functionality for compatibility for now.
-        try:
-            if 'context' in query:
-                self.current_context = query['context'].copy()
-            else:
-                self.current_context = dict()
-            self.current_context['prevQuery'] = query['textQuery']['text']
-        except KeyError:
-            pass
+        if 'context' in query:
+            self.current_context = query['context'].copy()
+        else:
+            self.current_context = dict()

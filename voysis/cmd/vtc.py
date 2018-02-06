@@ -126,7 +126,7 @@ def read_context(saved_context_file):
     else:
         return {
             'conversationId': None,
-            'context': None
+            'context': dict()
         }
 
 
@@ -152,11 +152,18 @@ def create_parser():
                         action="version",
                         version=__version__)
     query_parser = subparser.add_parser('query', help='Send audio query and get response.')
+    query_parser.add_argument("-n",
+                              "--new-conversation",
+                              help="Create a new conversation, do not use an existing ID from saved context",
+                              default=False,
+                              dest="new_conversation",
+                              action='store_true')
     query_parser.add_argument("-c",
-                              "--conversation",
-                              help="Use previous conversation ID. For refinement intent purposes",
-                              default="False",
-                              dest="previous_conversation")
+                              "--new-context",
+                              help="Use a new, blank, context, do not use an existing saved context",
+                              default=False,
+                              dest="new_context",
+                              action='store_true')
     query_parser.add_argument("-s",
                         "--send",
                         dest="wav_fh",
@@ -203,8 +210,10 @@ def main():
             response = feedback(voysis_client, args.conv_id, args.query_id, args.rating, args.description)
             print(response)
         elif args.subcommand == 'query':
-            if 'true' == args.previous_conversation.lower():
+            if not args.new_conversation:
                 voysis_client.current_conversation_id = saved_context['conversationId']
+            if not args.new_context:
+                voysis_client.current_context = saved_context['context'].copy()
             if not args.wav_dir:
                 response, query_id, conversation_id = stream(voysis_client, args.wav_fh, args.record)
                 print(response)
