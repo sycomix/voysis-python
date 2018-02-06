@@ -29,7 +29,7 @@ class FileDevice(Device):
         while not self._queue.empty():
             data = self._queue.get_nowait()
             if data:
-                now = datetime.datetime.now()
+                now = datetime.datetime.utcnow()
                 seconds_since_last = (now - self._last_chunk_time).total_seconds()
                 if seconds_since_last < self.time_between_chunks:
                     time.sleep(self.time_between_chunks - seconds_since_last)
