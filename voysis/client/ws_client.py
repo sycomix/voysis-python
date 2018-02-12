@@ -18,6 +18,7 @@ class WSClient(client.Client):
         self._event = threading.Event()
         self._completed_query = None
         self._response_futures = dict()
+        self._error = None
 
     def send_audio(self, frames_generator):
         for frame in frames_generator:
@@ -56,6 +57,10 @@ class WSClient(client.Client):
     def on_ws_message(self, web_socket, message):
         json_msg = json.loads(message)
         if 'response' == json_msg['type']:
+            if int(json_msg['responseCode']) > 299:
+                self._error = client.ClientError(
+                    "Request {requestId} failed with status code {responseCode}: {responseMessage}".format(**json_msg)
+                )
             try:
                 future = self._response_futures.pop(json_msg['requestId'])
                 future.set(
@@ -74,6 +79,7 @@ class WSClient(client.Client):
     def on_ws_error(self, web_socket, error):
         try:
             self._complete_reason = 'error'
+            self._error = error
             web_socket.close()
         except websocket.WebSocketException:
             self._update_state()
@@ -89,7 +95,7 @@ class WSClient(client.Client):
         Connect the WebSocket. This method blocks until the socket is
         successfully connected. If the socket does not connect within
         the client's timeout, ClientError is raised.
-        :return: None
+        :return: bool True if the connection was successful
         """
         if not self._websocket_app:
             self._event.clear()
@@ -118,6 +124,7 @@ class WSClient(client.Client):
     def stream_audio(self, frames_generator, notification_handler=None):
         try:
             self._complete_reason = None
+            self._error = None
             self._notification_handler = notification_handler
             self.connect()
             self.refresh_app_token()
@@ -136,9 +143,19 @@ class WSClient(client.Client):
                 self._update_current_context(completed_query)
                 return completed_query
             else:
-                raise ValueError("Query failed {}".format(self._complete_reason))
-        except (websocket.WebSocketException, socket.error) as error:
-            raise ValueError('Failed to stream audio. {}'.format(error))
+                raise client.ClientError("Query failed {}".format(self._complete_reason))
+        except OSError as error:
+            raise client.ClientError(error.strerror)
+        except websocket.WebSocketConnectionClosedException as error:
+            # This exception typically happens when we try to continue
+            # streaming after the server side has shut down the socket
+            # due to an error condition.
+            if self._error:
+                raise self._error
+            else:
+                raise error
+        except websocket.WebSocketException as error:
+            raise client.ClientError(str(error))
         finally:
             self._notification_handler = None
 
@@ -149,6 +166,8 @@ class WSClient(client.Client):
     def _wait_for_event(self, message):
         if not self._event.wait(self._timeout):
             raise client.ClientError("Timed out waiting on " + message)
+        if self._error:
+            raise self._error
 
     def _update_state(self, complete_reason=None, response_ready=True):
         if complete_reason:

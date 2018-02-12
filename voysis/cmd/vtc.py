@@ -6,6 +6,7 @@ import os
 import traceback
 
 from voysis import config as config
+from voysis.client.client import ClientError
 from voysis.client.http_client import HTTPClient
 from voysis.client.ws_client import WSClient
 from voysis.device.file_device import FileDevice
@@ -236,6 +237,8 @@ def main():
         else:
             raise ValueError('Unsupported subcommand.')
         voysis_client.close()
+    except ClientError as client_error:
+        log.error(client_error.message)
     except Exception as e:
         log.info(traceback.format_exc())
         log.info('Error: {err}'.format(err=e))
