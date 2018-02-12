@@ -129,10 +129,8 @@ class WSClient(client.Client):
             self.connect()
             self.refresh_app_token()
             create_entity = self._create_audio_query_entity()
-            conversation_id = self.current_conversation_id if self.current_conversation_id else '*'
-            create_uri = '/conversations/{conversation_id}/queries'.format(conversation_id=conversation_id)
             # self._event.clear()
-            self.send_request(create_uri, create_entity, call_on_complete=self._update_current_conversation)
+            self.send_request('/queries', create_entity, call_on_complete=self._update_current_conversation)
             # self._wait_for_event('query creation')
             self._event.clear()
             self.send_audio(frames_generator)

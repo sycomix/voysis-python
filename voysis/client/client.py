@@ -146,11 +146,14 @@ class Client(object):
 
     def _create_audio_query_entity(self):
         entity = {
+            'locale': self.locale,
             'queryType': 'audio',
             'audioQuery': {
                 'mimeType': 'audio/wav'
             }
         }
+        if self.current_conversation_id:
+            entity['conversationId'] = self.current_conversation_id
         if self.current_context:
             entity['context'] = self.current_context.copy()
         return entity
