@@ -1,4 +1,5 @@
 import argparse
+from collections import defaultdict
 from future.builtins import input
 import json
 import glog as log
@@ -121,14 +122,12 @@ def feedback(voysis_client, conversation_id, query_id, rating, description):
 
 
 def read_context(saved_context_file):
+    ctx = defaultdict(lambda: dict(conversationId=None, context=dict()))
     if os.path.isfile(saved_context_file):
         with open(saved_context_file, 'r') as f:
-            return json.load(f)
-    else:
-        return {
-            'conversationId': None,
-            'context': dict()
-        }
+            loaded = json.load(f)
+            ctx.update(loaded)
+    return ctx
 
 
 def write_context(context, saved_context_file):
@@ -212,16 +211,16 @@ def main():
             print(response)
         elif args.subcommand == 'query':
             if not args.new_conversation:
-                voysis_client.current_conversation_id = saved_context['conversationId']
+                voysis_client.current_conversation_id = saved_context[url]['conversationId']
             if not args.new_context:
-                voysis_client.current_context = saved_context['context'].copy()
+                voysis_client.current_context = saved_context[url]['context'].copy()
             if not args.wav_dir:
                 response, query_id, conversation_id = stream(voysis_client, args.wav_fh, args.record)
                 print(response)
                 print('QueryID: {}'.format(query_id))
                 print('ConversationID: {}'.format(conversation_id))
-                saved_context['conversationId'] = conversation_id
-                saved_context['context'] = voysis_client.current_context
+                saved_context[url]['conversationId'] = conversation_id
+                saved_context[url]['context'] = voysis_client.current_context
                 write_context(saved_context, 'context.json')
             else:
                 for root, dirs, files in os.walk(args.wav_dir):
