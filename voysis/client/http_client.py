@@ -58,5 +58,3 @@ class HTTPClient(client.Client):
             raise client.ClientError(msg)
         except (HTTPError, UrlLib3HTTPError) as error:
             raise client.ClientError(str(error))
-        except Exception as error:
-            print(type(error))
