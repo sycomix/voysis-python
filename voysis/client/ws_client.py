@@ -108,7 +108,10 @@ class WSClient(client.Client):
             )
             self._web_socket_thread = WebSocketThread(self._websocket_app)
             self._web_socket_thread.start()
-            self._wait_for_event('WebSocket connection')
+            connected = self._wait_for_event('WebSocket connection')
+        else:
+            connected = self._websocket_app.sock.connected
+        return connected
 
     def close(self):
         """
