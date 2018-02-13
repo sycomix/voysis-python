@@ -1,5 +1,7 @@
 import requests
 from furl import furl
+from requests import HTTPError
+from requests.packages.urllib3.exceptions import HTTPError as UrlLib3HTTPError
 
 from voysis.client import client as client
 
@@ -48,6 +50,11 @@ class HTTPClient(client.Client):
                 self._update_current_context(query)
                 return query
             else:
-                raise ValueError('Status code {}'.format(response.status_code))
-        except (requests.exceptions.RequestException, ValueError) as error:
-            raise ValueError('Failed to stream audio. {}'.format(error))
+                raise client.ClientError('Request failed with status code {}'.format(response.status_code))
+        except OSError as error:
+            msg = error.strerror
+            if not msg:
+                msg = str(error)
+            raise client.ClientError(msg)
+        except (HTTPError, UrlLib3HTTPError) as error:
+            raise client.ClientError(str(error))

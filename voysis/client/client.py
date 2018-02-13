@@ -8,8 +8,13 @@ from dateutil.tz import tzutc
 from voysis.client.user_agent import UserAgent
 
 
-class ClientError(Exception):
-    pass
+class ClientError(BaseException):
+    def __init__(self, *args, **kwargs):
+        super(ClientError, self).__init__(*args, **kwargs)
+        if args and len(args) > 0:
+            self.message = args[0]
+        else:
+            self.message = None
 
 
 class ResponseFuture(object):
