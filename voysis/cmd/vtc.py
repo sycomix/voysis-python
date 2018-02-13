@@ -1,4 +1,5 @@
 import argparse
+from collections import defaultdict
 from future.builtins import input
 import json
 import glog as log
@@ -121,14 +122,12 @@ def feedback(voysis_client, conversation_id, query_id, rating, description):
 
 
 def read_context(saved_context_file):
+    ctx = defaultdict(lambda: dict(conversationId=None, context=dict()))
     if os.path.isfile(saved_context_file):
         with open(saved_context_file, 'r') as f:
-            return json.load(f)
-    else:
-        return {
-            'conversationId': None,
-            'context': dict()
-        }
+            loaded = json.load(f)
+            ctx.update(loaded)
+    return ctx
 
 
 def write_context(context, saved_context_file):
@@ -153,17 +152,17 @@ def create_parser():
                         action="version",
                         version=__version__)
     query_parser = subparser.add_parser('query', help='Send audio query and get response.')
-    query_parser.add_argument("-n",
-                              "--new-conversation",
-                              help="Create a new conversation, do not use an existing ID from saved context",
-                              default=False,
-                              dest="new_conversation",
-                              action='store_true')
     query_parser.add_argument("-c",
-                              "--new-context",
-                              help="Use a new, blank, context, do not use an existing saved context",
+                              "--conversation",
+                              help="Create a new query in a conversation, using the conversation ID from saved context",
                               default=False,
-                              dest="new_context",
+                              dest="continue_conversation",
+                              action='store_true')
+    query_parser.add_argument("-x",
+                              "--use-context",
+                              help="Send saved context along with the query (omit to use a blank context)",
+                              default=False,
+                              dest="use_context",
                               action='store_true')
     query_parser.add_argument("-s",
                         "--send",
@@ -211,17 +210,17 @@ def main():
             response = feedback(voysis_client, args.conv_id, args.query_id, args.rating, args.description)
             print(response)
         elif args.subcommand == 'query':
-            if not args.new_conversation:
-                voysis_client.current_conversation_id = saved_context['conversationId']
-            if not args.new_context:
-                voysis_client.current_context = saved_context['context'].copy()
+            if args.continue_conversation:
+                voysis_client.current_conversation_id = saved_context[url]['conversationId']
+            if args.use_context:
+                voysis_client.current_context = saved_context[url]['context'].copy()
             if not args.wav_dir:
                 response, query_id, conversation_id = stream(voysis_client, args.wav_fh, args.record)
                 print(response)
                 print('QueryID: {}'.format(query_id))
                 print('ConversationID: {}'.format(conversation_id))
-                saved_context['conversationId'] = conversation_id
-                saved_context['context'] = voysis_client.current_context
+                saved_context[url]['conversationId'] = conversation_id
+                saved_context[url]['context'] = voysis_client.current_context
                 write_context(saved_context, 'context.json')
             else:
                 for root, dirs, files in os.walk(args.wav_dir):
