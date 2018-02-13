@@ -4,6 +4,7 @@ from future.builtins import input
 import json
 import glog as log
 import os
+import sys
 import traceback
 
 from voysis import config as config
@@ -116,8 +117,8 @@ def stream(voysis_client, file=None, record=None):
     return result, result['id'], result['conversationId']
 
 
-def feedback(voysis_client, conversation_id, query_id, rating, description):
-    feedback_result = voysis_client.send_feedback(conversation_id, query_id, rating, description)
+def feedback(voysis_client, query_id, rating, description):
+    feedback_result = voysis_client.send_feedback(query_id, rating, description)
     return json.dumps(feedback_result, indent=4, sort_keys=True)
 
 
@@ -183,12 +184,9 @@ def create_parser():
                         default="{}".format(MICROPHONE),
                         type=lambda x: valid_mic(parser, x))
     feedback_parser = subparser.add_parser('feedback', help='Send feedback for a particular query.')
-    feedback_parser.add_argument("--conv-id",
-                        dest="conv_id",
-                        help="Set the conversation id for sending feedback. Required for feedback request.")
     feedback_parser.add_argument("--query-id",
                         dest="query_id",
-                        help="Set the query if for sending feedback. Required for feedback request.")
+                        help="Set the query ID for sending feedback. Read from saved context if not provided here.")
     feedback_parser.add_argument("--rating",
                         help="Set the rating (int 1-5) for feedback. Required for feedback request.",
                         type=lambda x: valid_rating(parser, int(x)))
@@ -207,7 +205,12 @@ def main():
         url = args.url if args.url else config.get(config.GENERAL, 'url', None)
         voysis_client = client_factory(url)
         if args.subcommand == 'feedback':
-            response = feedback(voysis_client, args.conv_id, args.query_id, args.rating, args.description)
+            query_id = args.query_id if args.query_id else saved_context[url]['queryId']
+            if not query_id:
+                print("You must specify the ID of a query to provide feedback for.")
+                raise SystemExit(1)
+            print("Sending feedback for query ID {}".format(query_id))
+            response = feedback(voysis_client, query_id, args.rating, args.description)
             print(response)
         elif args.subcommand == 'query':
             if args.continue_conversation:
@@ -216,10 +219,9 @@ def main():
                 voysis_client.current_context = saved_context[url]['context'].copy()
             if not args.wav_dir:
                 response, query_id, conversation_id = stream(voysis_client, args.wav_fh, args.record)
-                print(response)
-                print('QueryID: {}'.format(query_id))
-                print('ConversationID: {}'.format(conversation_id))
+                json.dump(response, sys.stdout, indent=4)
                 saved_context[url]['conversationId'] = conversation_id
+                saved_context[url]['queryId'] = query_id
                 saved_context[url]['context'] = voysis_client.current_context
                 write_context(saved_context, 'context.json')
             else:
@@ -230,9 +232,7 @@ def main():
                             file_path = os.path.join(args.wav_dir, file)
                             log.info('Streaming {}'.format(file_path))
                             response, query_id, conversation_id = stream(voysis_client, open(file_path, 'rb'))
-                            print(response)
-                            print('QueryId: {}'.format(query_id))
-                            print('ConversationID: {}'.format(conversation_id))
+                            json.dump(response, sys.stdout, indent=4)
         else:
             raise ValueError('Unsupported subcommand.')
         voysis_client.close()

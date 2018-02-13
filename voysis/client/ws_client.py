@@ -160,9 +160,9 @@ class WSClient(client.Client):
         finally:
             self._notification_handler = None
 
-    def send_feedback(self, conversation_id, query_id, rating, description):
+    def send_feedback(self, query_id, rating, description):
         self.connect()
-        return super(WSClient, self).send_feedback(conversation_id, query_id, rating, description)
+        return super(WSClient, self).send_feedback(query_id, rating, description)
 
     def _wait_for_event(self, message):
         if not self._event.wait(self._timeout):
