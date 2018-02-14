@@ -1,3 +1,5 @@
+import base64
+import json
 import requests
 from furl import furl
 from requests import HTTPError
@@ -31,13 +33,11 @@ class HTTPClient(client.Client):
     def stream_audio(self, frames_generator, notification_handler=None):
         try:
             self.refresh_app_token()
-            conversation_id = self.current_conversation_id if self.current_conversation_id else '*'
+            entity = self._create_audio_query_entity()
             headers = self.create_common_headers()
             headers['Content-Type'] = 'audio/wav'
-            headers['Accept-Language'] = self.locale
-            streaming_url = self.base_url.copy().add(
-                path=['conversations', conversation_id, 'queries', '*', 'audio']
-            )
+            headers['X-Voysis-Entity'] = base64.b64encode(json.dumps(entity).encode("UTF-8"))
+            streaming_url = self.base_url.copy().add(path=['queries'])
             response = requests.post(
                 str(streaming_url),
                 headers=headers,

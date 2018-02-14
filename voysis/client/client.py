@@ -118,15 +118,14 @@ class Client(object):
             headers['Authorization'] = 'Bearer ' + self._app_token
         return headers
 
-    def send_feedback(self, conversation_id, query_id, rating, description):
+    def send_feedback(self, query_id, rating, description):
         """
-        Send feedback to the server for the current query.
+        Send feedback to the server for the given query.
         """
         request_body = {'rating': rating}
         if description:
             request_body['description'] = description
-        uri = "/conversations/{conversation_id}/queries/{query_id}/feedback".format(
-            conversation_id=conversation_id,
+        uri = "/queries/{query_id}/feedback".format(
             query_id=query_id
         )
         return self.send_request(uri, request_body).get_entity()
@@ -146,11 +145,14 @@ class Client(object):
 
     def _create_audio_query_entity(self):
         entity = {
+            'locale': self.locale,
             'queryType': 'audio',
             'audioQuery': {
                 'mimeType': 'audio/wav'
             }
         }
+        if self.current_conversation_id:
+            entity['conversationId'] = self.current_conversation_id
         if self.current_context:
             entity['context'] = self.current_context.copy()
         return entity
