@@ -8,7 +8,7 @@ from dateutil.tz import tzutc
 from voysis.client.user_agent import UserAgent
 
 
-class ClientError(BaseException):
+class ClientError(Exception):
     def __init__(self, *args, **kwargs):
         super(ClientError, self).__init__(*args, **kwargs)
         if args and len(args) > 0:
