@@ -5,8 +5,10 @@ import json
 import glog as log
 import os
 import sys
+import threading
 import traceback
 
+from select import select
 from voysis import config as config
 from voysis.client.client import ClientError
 from voysis.client.http_client import HTTPClient
@@ -19,6 +21,21 @@ from voysis.version import __version__
 MICROPHONE = 'mic'
 MICROPHONE_ARRAY = 'mic_ar'
 MICROPHONE_DUMMY = 'mic_file'
+
+
+class RecordingStopper(object):
+    """
+    A class that can be used to stop a device recording and save interesting event information.
+    """
+    def __init__(self, device):
+        """
+        Create a new RecordingStopper instance.
+        :param device: The device that will be stopped.
+        """
+        self._device = device
+
+    def stop_recording(self, reason):
+        self._device.stop_recording()
 
 
 def valid_file(parser, arg):
@@ -83,24 +100,31 @@ def stream_mic(client, device):
     query = None
     device.start_recording()
     try:
-        def stop_recording(reason):
-            print('Stopping recording ({})...'.format(reason))
-            device.stop_recording()
-        query = client.stream_audio(device.generate_frames(), notification_handler=stop_recording)
-        stop_recording(None)
-    except KeyboardInterrupt:
-        pass
+        recording_stopper = RecordingStopper(device)
+
+        def keyboard_stop():
+            print("Press ENTER to stop recording (or wait for VAD)")
+            while device.is_recording():
+                res = select([sys.stdin], [], [], 1)
+                for sel in res[0]:
+                    if sel == sys.stdin:
+                        recording_stopper.stop_recording('user_stop')
+
+        keyboard_thread = threading.Thread(target=keyboard_stop)
+        keyboard_thread.daemon = True
+        keyboard_thread.start()
+        query = client.stream_audio(device.generate_frames(), notification_handler=recording_stopper.stop_recording)
+        recording_stopper.stop_recording(None)
     except ValueError:
         pass
     return query
 
 
 def stream_file(client, device):
-    def stop_recording(reason):
-        device.stop_recording()
+    recording_stopper = RecordingStopper(device)
     device.start_recording()
-    query = client.stream_audio(device.generate_frames(), notification_handler=stop_recording)
-    stop_recording(None)
+    query = client.stream_audio(device.generate_frames(), notification_handler=recording_stopper.stop_recording)
+    recording_stopper.stop_recording(None)
     return query
 
 

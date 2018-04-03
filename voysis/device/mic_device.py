@@ -39,12 +39,16 @@ class MicDevice(Device):
             stream_callback = self._callback,
             input_device_index = self.device_index
         )
+        self.quit_event.clear()
         self.queue.queue.clear()
         self.stream.start_stream()
 
     def stop_recording(self):
         self.stream.stop_stream()
         self.quit_event.set()
+
+    def is_recording(self):
+        return not(self.quit_event.is_set())
 
     def generate_frames(self):
         self.quit_event.clear()

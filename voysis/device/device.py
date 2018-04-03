@@ -19,5 +19,9 @@ class Device(object):
         pass
 
     @abc.abstractmethod
+    def is_recording(self):
+        pass
+
+    @abc.abstractmethod
     def generate_frames(self):
         pass
