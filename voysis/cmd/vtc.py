@@ -40,6 +40,7 @@ class RecordingStopper(object):
         self._durations = durations
         self._mappings = {
             'vad_stop': 'vad',
+            'user_stop': 'userStop',
             'query_complete': 'complete'
         }
 
