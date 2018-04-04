@@ -54,10 +54,15 @@ class MicDevice(Device):
         self.quit_event.clear()
         try:
             while not self.quit_event.is_set():
-                frames = self.queue.get()
-                if not frames:
-                    break
-                yield frames
+                try:
+                    frames = self.queue.get(block=False)
+                    if not frames:
+                        break
+                    yield frames
+                except Queue.Empty:
+                    pass
         except StopIteration:
             self.stream.close()
             self.pyaudio_instance.terminate()
+            raise
+        raise StopIteration()

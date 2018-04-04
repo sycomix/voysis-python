@@ -157,6 +157,7 @@ def stream(voysis_client, file=None, record=None):
     durations = {}
     result = streamer(voysis_client, device, durations)
     print('Durations: ' + (json.dumps(durations)))
+    voysis_client.send_feedback(result['id'], durations=durations)
     return result, result['id'], result['conversationId']
 
 

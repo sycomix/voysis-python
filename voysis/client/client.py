@@ -84,7 +84,7 @@ class Client(object):
         pass
 
     @abc.abstractmethod
-    def send_request(self, uri, request_entity=None, extra_headers=None, call_on_complete=None):
+    def send_request(self, uri, request_entity=None, extra_headers=None, call_on_complete=None, method='POST'):
         """
         Send a request to the remote server. Raise an exception if the
         request is not successful.
@@ -94,6 +94,7 @@ class Client(object):
                               have the standard headers set.
         :param call_on_complete: A callable that will be invoked when the response
                                  to the request is completed.
+        :param method: The HTTP method to use in sending the request. Defaults to POST.
         :return: A ResponseFuture instance that can be used to obtain the
                  response.
         """
@@ -118,17 +119,23 @@ class Client(object):
             headers['Authorization'] = 'Bearer ' + self._app_token
         return headers
 
-    def send_feedback(self, query_id, rating, description):
+    def send_feedback(self, query_id, rating=None, description=None, durations=None):
         """
         Send feedback to the server for the given query.
         """
-        request_body = {'rating': rating}
+        request_body = {}
+        if rating:
+            request_body['rating'] = rating
         if description:
             request_body['description'] = description
+        if durations:
+            request_body['durations'] = durations
+        if len(request_body) < 1:
+            return None
         uri = "/queries/{query_id}/feedback".format(
             query_id=query_id
         )
-        return self.send_request(uri, request_body).get_entity()
+        return self.send_request(uri, request_body, method='PATCH').get_entity()
 
     def refresh_app_token(self, force=False):
         if self.auth_token and (force or self._app_token_expiry < datetime.now(tzutc())):
