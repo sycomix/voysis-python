@@ -6,6 +6,7 @@ import glog as log
 import os
 import sys
 import threading
+from time import time
 import traceback
 
 from select import select
@@ -27,15 +28,30 @@ class RecordingStopper(object):
     """
     A class that can be used to stop a device recording and save interesting event information.
     """
-    def __init__(self, device):
+    def __init__(self, device, query_start, durations):
         """
         Create a new RecordingStopper instance.
         :param device: The device that will be stopped.
+        :param query_start: The timestamp of the start of the query.
+        :param durations: A dict that will be populated with relevant durations.
         """
         self._device = device
+        self._query_start = int(query_start * 1000)
+        self._durations = durations
+        self._mappings = {
+            'vad_stop': 'vad',
+            'query_complete': 'complete'
+        }
 
     def stop_recording(self, reason):
+        was_recording = self._device.is_recording()
         self._device.stop_recording()
+        if was_recording:
+            print("Recording stopped (%s), waiting for response.." % reason)
+        if reason:
+            event_timestamp = int(time() * 1000) - self._query_start
+            duration_name = self._mappings.get(reason, reason)
+            self._durations[duration_name] = event_timestamp
 
 
 def valid_file(parser, arg):
@@ -94,13 +110,14 @@ def device_factory(record, client):
     return device
 
 
-def stream_mic(client, device):
+def stream_mic(client, device, durations):
     print("Ready to capture your voice query")
     input("Press ENTER to start recording")
     query = None
+    query_start = time()
     device.start_recording()
     try:
-        recording_stopper = RecordingStopper(device)
+        recording_stopper = RecordingStopper(device, query_start, durations)
 
         def keyboard_stop():
             print("Press ENTER to stop recording (or wait for VAD)")
@@ -120,8 +137,8 @@ def stream_mic(client, device):
     return query
 
 
-def stream_file(client, device):
-    recording_stopper = RecordingStopper(device)
+def stream_file(client, device, durations):
+    recording_stopper = RecordingStopper(device, time(), durations)
     device.start_recording()
     query = client.stream_audio(device.generate_frames(), notification_handler=recording_stopper.stop_recording)
     recording_stopper.stop_recording(None)
@@ -137,7 +154,9 @@ def stream(voysis_client, file=None, record=None):
     if isinstance(device, FileDevice):
         device.wav_file = file
         streamer = stream_file
-    result = streamer(voysis_client, device)
+    durations = {}
+    result = streamer(voysis_client, device, durations)
+    print('Durations: ' + (json.dumps(durations)))
     return result, result['id'], result['conversationId']
 
 
