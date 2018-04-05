@@ -28,13 +28,13 @@ class WSClient(client.Client):
         if not self._complete_reason:
             self.finalise_audio()
 
-    def send_request(self, uri, request_entity=None, extra_headers=None, call_on_complete=None):
+    def send_request(self, uri, request_entity=None, extra_headers=None, call_on_complete=None, method='POST'):
         request_id = self._next_request_id
         self._next_request_id = self._next_request_id + 1
         body = {
             'type': 'request',
             'requestId': request_id,
-            'method': 'POST',
+            'method': method,
             'restUri': uri,
             'entity': request_entity
         }
@@ -160,9 +160,9 @@ class WSClient(client.Client):
         finally:
             self._notification_handler = None
 
-    def send_feedback(self, query_id, rating, description):
+    def send_feedback(self, query_id, rating=None, description=None, durations=None):
         self.connect()
-        return super(WSClient, self).send_feedback(query_id, rating, description)
+        return super(WSClient, self).send_feedback(query_id, rating, description, durations)
 
     def _wait_for_event(self, message):
         if not self._event.wait(self._timeout):

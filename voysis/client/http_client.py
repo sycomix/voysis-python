@@ -14,12 +14,13 @@ class HTTPClient(client.Client):
         client.Client.__init__(self, url, user_agent)
         self.base_url = furl(url)
 
-    def send_request(self, uri, request_entity=None, extra_headers=None, call_on_complete=None):
+    def send_request(self, uri, request_entity=None, extra_headers=None, call_on_complete=None, method='POST'):
         headers = self.create_common_headers()
         if extra_headers:
             headers.update(extra_headers)
         url = self.base_url.copy().add(path=uri)
-        response = requests.post(
+        req_method = getattr(requests, method.lower())
+        response = req_method(
             str(url),
             headers=headers,
             json=request_entity
@@ -48,6 +49,7 @@ class HTTPClient(client.Client):
                 query = response.json()
                 self.current_conversation_id = query['conversationId']
                 self._update_current_context(query)
+                notification_handler('query_complete')
                 return query
             else:
                 raise client.ClientError('Request failed with status code {}'.format(response.status_code))

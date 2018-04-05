@@ -26,7 +26,7 @@ class FileDevice(Device):
         self._queue.queue.clear()
 
     def is_recording(self):
-        return not(self._queue.queue.empty())
+        return not(self._queue.empty())
 
     def generate_frames(self):
         while not self._queue.empty():

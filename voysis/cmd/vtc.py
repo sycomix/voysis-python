@@ -40,6 +40,7 @@ class RecordingStopper(object):
         self._durations = durations
         self._mappings = {
             'vad_stop': 'vad',
+            'user_stop': 'userStop',
             'query_complete': 'complete'
         }
 
@@ -157,6 +158,7 @@ def stream(voysis_client, file=None, record=None):
     durations = {}
     result = streamer(voysis_client, device, durations)
     print('Durations: ' + (json.dumps(durations)))
+    voysis_client.send_feedback(result['id'], durations=durations)
     return result, result['id'], result['conversationId']
 
 
