@@ -62,6 +62,7 @@ class Client(object):
         self.api_media_type = 'application/vnd.voysisquery.v1+json'
         self.ignore_vad = False
         self.locale = 'en-US'
+        self.check_hostname = True
         self.auth_token = None
         self.current_conversation_id = None
         self.current_context = None

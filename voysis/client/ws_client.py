@@ -1,5 +1,4 @@
 import json
-import socket
 import threading
 import websocket
 from voysis.client import client as client
@@ -106,7 +105,7 @@ class WSClient(client.Client):
                 on_open=self.on_ws_open,
                 on_close=self.on_ws_close
             )
-            self._web_socket_thread = WebSocketThread(self._websocket_app)
+            self._web_socket_thread = WebSocketThread(self._websocket_app, check_hostname=self.check_hostname)
             self._web_socket_thread.start()
             connected = self._wait_for_event('WebSocket connection')
         else:
@@ -186,12 +185,20 @@ class WSClient(client.Client):
 
 
 class WebSocketThread(threading.Thread):
-    def __init__(self, web_socket_app):
+    def __init__(self, web_socket_app, **kwargs):
+        '''
+        Initialise the WebSocketThread.
+        :param web_socket_app: The application to run on this thread.
+        :param kwargs: +check_hostname+: (boolean) enable or disable checking the hostname on TLS connections.
+        '''
         threading.Thread.__init__(self)
         self._web_socket_app = web_socket_app
+        self._ssl_opts = {
+            'check_hostname': kwargs.get('check_hostname', True)
+        }
         self.running_event = threading.Event()
 
     def run(self):
         self.running_event.set()
         self.running_event = None
-        self._web_socket_app.run_forever()
+        self._web_socket_app.run_forever(sslopt=self._ssl_opts)

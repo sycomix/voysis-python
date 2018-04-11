@@ -84,14 +84,16 @@ def valid_rating(parser, arg):
 
 
 def client_factory(url):
-    if url.startswith('ws://'):
+    if url.startswith('ws://') or url.startswith('wss://'):
         client = WSClient(url)
         config.apply_config(client, 'client')
         config.apply_config(client, 'ws_client')
-    else:
+    elif url.startswith('http://') or url.startswith('https://'):
         client = HTTPClient(url)
         config.apply_config(client, 'client')
         config.apply_config(client, 'http_client')
+    else:
+        raise ValueError('No client for protocol in URL %s' % url)
     return client
 
 
