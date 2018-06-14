@@ -37,7 +37,7 @@ class HTTPClient(client.Client):
             self.refresh_app_token()
             entity = self._create_audio_query_entity()
             headers = self.create_common_headers()
-            headers['Content-Type'] = 'audio/wav'
+            headers['Content-Type'] = 'audio/pcm;bits=16;rate=16000'
             headers['X-Voysis-Entity'] = base64.b64encode(json.dumps(entity).encode("UTF-8"))
             streaming_url = self.base_url.copy().add(path=['queries'])
             response = requests.post(

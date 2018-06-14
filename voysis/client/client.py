@@ -156,7 +156,7 @@ class Client(object):
             'locale': self.locale,
             'queryType': 'audio',
             'audioQuery': {
-                'mimeType': 'audio/wav'
+                'mimeType': 'audio/pcm;bits=16;rate=16000'
             }
         }
         if self.current_conversation_id:
