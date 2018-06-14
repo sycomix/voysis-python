@@ -123,8 +123,10 @@ class WSClient(client.Client):
         self._web_socket_thread = None
         self._websocket_app = None
 
-    def stream_audio(self, frames_generator, notification_handler=None):
+    def stream_audio(self, frames_generator, notification_handler=None, audio_type=None):
         try:
+            if audio_type is not None:
+                self._audio_type = audio_type
             self._complete_reason = None
             self._error = None
             self._notification_handler = notification_handler

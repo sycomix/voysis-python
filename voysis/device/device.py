@@ -25,3 +25,7 @@ class Device(object):
     @abc.abstractmethod
     def generate_frames(self):
         pass
+
+    @abc.abstractmethod
+    def audio_type(self):
+        pass
