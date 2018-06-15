@@ -12,6 +12,7 @@ if is_py2:
 else:
     import queue as Queue
 
+
 class MicDevice(Device):
     def __init__(self, client):
         Device.__init__(self)
@@ -30,14 +31,14 @@ class MicDevice(Device):
 
     def start_recording(self):
         self.stream = self.pyaudio_instance.open(
-            input = True,
-            start = False,
+            input=True,
+            start=False,
             format=self.audio_format,
             channels=self.channels,
             rate=self.sample_rate,
-            frames_per_buffer = self.chunk_size,
-            stream_callback = self._callback,
-            input_device_index = self.device_index
+            frames_per_buffer=self.chunk_size,
+            stream_callback=self._callback,
+            input_device_index=self.device_index
         )
         self.quit_event.clear()
         self.queue.queue.clear()
@@ -66,3 +67,8 @@ class MicDevice(Device):
             self.pyaudio_instance.terminate()
             raise
         raise StopIteration()
+
+    def audio_type(self):
+        return "audio/pcm;bits={};rate={}".format(
+            pyaudio.get_sample_size(self.audio_format) * 8,
+            self.sample_rate)

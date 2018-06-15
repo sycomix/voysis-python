@@ -68,9 +68,10 @@ class Client(object):
         self.current_context = None
         self._app_token = None
         self._app_token_expiry = datetime.now(tzutc())
+        self._audio_type = 'audio/pcm;bits=16;rate=16000'
 
     @abc.abstractmethod
-    def stream_audio(self, frames_generator, notification_handler=None):
+    def stream_audio(self, frames_generator, notification_handler=None, audio_type=None):
         '''
         Stream audio data to the query API, creating a new conversation (if
         required) and a new audio query. Raises a ClientError if query
@@ -80,6 +81,7 @@ class Client(object):
         streaming to the server is stopped for any reason. The callable
         should accept a single argument, which will be a string indicating
         the reason for the stoppage.
+        :param audio_type The Content-Type to use for the audio
         :return: The completed query as a dictionary.
         '''
         pass
@@ -156,7 +158,7 @@ class Client(object):
             'locale': self.locale,
             'queryType': 'audio',
             'audioQuery': {
-                'mimeType': 'audio/wav'
+                'mimeType': self._audio_type
             }
         }
         if self.current_conversation_id:

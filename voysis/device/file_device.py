@@ -45,3 +45,6 @@ class FileDevice(Device):
             if not data:
                 break
             self._queue.put(data)
+
+    def audio_type(self):
+        return 'audio/pcm;bits=16;rate=16000'

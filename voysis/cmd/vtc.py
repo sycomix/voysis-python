@@ -133,7 +133,8 @@ def stream_mic(client, device, durations):
         keyboard_thread = threading.Thread(target=keyboard_stop)
         keyboard_thread.daemon = True
         keyboard_thread.start()
-        query = client.stream_audio(device.generate_frames(), notification_handler=recording_stopper.stop_recording)
+        query = client.stream_audio(device.generate_frames(), notification_handler=recording_stopper.stop_recording, 
+                                    audio_type=device.audio_type())
         recording_stopper.stop_recording(None)
     except ValueError:
         pass
@@ -143,7 +144,8 @@ def stream_mic(client, device, durations):
 def stream_file(client, device, durations):
     recording_stopper = RecordingStopper(device, time(), durations)
     device.start_recording()
-    query = client.stream_audio(device.generate_frames(), notification_handler=recording_stopper.stop_recording)
+    query = client.stream_audio(device.generate_frames(), notification_handler=recording_stopper.stop_recording, 
+                                audio_type=device.audio_type())
     recording_stopper.stop_recording(None)
     return query
 

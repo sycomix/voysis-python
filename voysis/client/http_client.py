@@ -32,12 +32,14 @@ class HTTPClient(client.Client):
             call_on_complete=call_on_complete
         )
 
-    def stream_audio(self, frames_generator, notification_handler=None):
+    def stream_audio(self, frames_generator, notification_handler=None, audio_type=None):
         try:
             self.refresh_app_token()
+            if audio_type is not None:
+                self._audio_type = audio_type
             entity = self._create_audio_query_entity()
             headers = self.create_common_headers()
-            headers['Content-Type'] = 'audio/wav'
+            headers['Content-Type'] = self._audio_type
             headers['X-Voysis-Entity'] = base64.b64encode(json.dumps(entity).encode("UTF-8"))
             streaming_url = self.base_url.copy().add(path=['queries'])
             response = requests.post(
