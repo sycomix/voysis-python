@@ -56,10 +56,10 @@ class MicDevice(Device):
         try:
             while not self.quit_event.is_set():
                 try:
-                    frames = self.queue.get(block=False)
-                    if not frames:
+                    if frames := self.queue.get(block=False):
+                        yield frames
+                    else:
                         break
-                    yield frames
                 except Queue.Empty:
                     pass
         except StopIteration:
@@ -69,6 +69,4 @@ class MicDevice(Device):
         raise StopIteration()
 
     def audio_type(self):
-        return "audio/pcm;bits={};rate={}".format(
-            pyaudio.get_sample_size(self.audio_format) * 8,
-            self.sample_rate)
+        return f"audio/pcm;bits={pyaudio.get_sample_size(self.audio_format) * 8};rate={self.sample_rate}"

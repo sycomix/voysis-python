@@ -49,14 +49,15 @@ class HTTPClient(client.Client):
                 verify=self.check_hostname,
                 data=frames_generator
             )
-            if response.status_code == 200:
-                query = response.json()
-                self.current_conversation_id = query['conversationId']
-                self._update_current_context(query)
-                notification_handler('query_complete')
-                return query
-            else:
-                raise client.ClientError('Request failed with status code {}'.format(response.status_code))
+            if response.status_code != 200:
+                raise client.ClientError(
+                    f'Request failed with status code {response.status_code}'
+                )
+            query = response.json()
+            self.current_conversation_id = query['conversationId']
+            self._update_current_context(query)
+            notification_handler('query_complete')
+            return query
         except OSError as error:
             msg = error.strerror
             if not msg:

@@ -34,8 +34,8 @@ def read_register(register, length):
 
 data = write_register(10, [30])
 mic_gain = read_register(0x10, 1)[0]
-print ("Mic gain is set to {}".format(mic_gain))
-print ("Wrote {}".format(data))
+print(f"Mic gain is set to {mic_gain}")
+print(f"Wrote {data}")
 
 #mic_gain = read_register(0x10, 1)[0]
 #print "Mic gain is set to %d" % (mic_gain)

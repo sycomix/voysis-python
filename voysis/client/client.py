@@ -11,10 +11,7 @@ from voysis.client.user_agent import UserAgent
 class ClientError(Exception):
     def __init__(self, *args, **kwargs):
         super(ClientError, self).__init__(*args, **kwargs)
-        if args and len(args) > 0:
-            self.message = args[0]
-        else:
-            self.message = None
+        self.message = args[0] if args and args else None
 
 
 class ResponseFuture(object):
@@ -119,7 +116,7 @@ class Client(object):
             'Accept': self.api_media_type
         }
         if self._app_token:
-            headers['Authorization'] = 'Bearer ' + self._app_token
+            headers['Authorization'] = f'Bearer {self._app_token}'
         return headers
 
     def send_feedback(self, query_id, rating=None, description=None, durations=None):
@@ -133,7 +130,7 @@ class Client(object):
             request_body['description'] = description
         if durations:
             request_body['durations'] = durations
-        if len(request_body) < 1:
+        if not request_body:
             return None
         uri = "/queries/{query_id}/feedback".format(
             query_id=query_id
@@ -143,8 +140,8 @@ class Client(object):
     def refresh_app_token(self, force=False):
         if self.auth_token and (force or self._app_token_expiry < datetime.now(tzutc())):
             auth_headers = {
-                'Authorization': 'Bearer ' + self.auth_token,
-                'Accept': 'application/json'
+                'Authorization': f'Bearer {self.auth_token}',
+                'Accept': 'application/json',
             }
             response_future = self.send_request('/tokens', extra_headers=auth_headers)
             app_token_response = response_future.get_entity(5)

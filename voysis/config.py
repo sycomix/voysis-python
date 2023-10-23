@@ -10,9 +10,9 @@ WS = 'ws'
 MIC = 'mic'
 
 _converters = {
-    bool: lambda x: 'true' == str(x).lower(),
+    bool: lambda x: str(x).lower() == 'true',
     int: int,
-    float: float
+    float: float,
 }
 
 
@@ -71,8 +71,7 @@ def get_float(section, name, default):
 
 def get_boolean(section, name, default):
     try:
-        value = Config.getboolean(section, name)
-        return value
+        return Config.getboolean(section, name)
     except:
         return default
 

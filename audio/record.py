@@ -37,8 +37,7 @@ def record():
     frames = []
 
     try:
-        for frame in capture(stream):
-            frames.append(frame)
+        frames.extend(iter(capture(stream)))
     except KeyboardInterrupt:
         print("Stopped recording")
         stream.stop_stream()

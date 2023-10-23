@@ -30,8 +30,7 @@ class FileDevice(Device):
 
     def generate_frames(self):
         while not self._queue.empty():
-            data = self._queue.get_nowait()
-            if data:
+            if data := self._queue.get_nowait():
                 now = datetime.datetime.utcnow()
                 seconds_since_last = (now - self._last_chunk_time).total_seconds()
                 if seconds_since_last < self.time_between_chunks:
@@ -41,10 +40,10 @@ class FileDevice(Device):
 
     def wav_to_frames(self):
         while True:
-            data = self.wav_file.read(self.chunk_size)
-            if not data:
+            if data := self.wav_file.read(self.chunk_size):
+                self._queue.put(data)
+            else:
                 break
-            self._queue.put(data)
 
     def audio_type(self):
         return 'audio/pcm;bits=16;rate=16000'

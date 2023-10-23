@@ -48,7 +48,7 @@ class RecordingStopper(object):
         was_recording = self._device.is_recording()
         self._device.stop_recording()
         if was_recording:
-            print("Recording stopped (%s), waiting for response.." % reason)
+            print(f"Recording stopped ({reason}), waiting for response..")
         if reason:
             event_timestamp = int(time() * 1000) - self._query_start
             duration_name = self._mappings.get(reason, reason)
@@ -57,14 +57,14 @@ class RecordingStopper(object):
 
 def valid_file(parser, arg):
     if not os.path.isfile(arg):
-        parser.error("The file %s does not exist!" % arg)
+        parser.error(f"The file {arg} does not exist!")
     else:
         return open(arg, 'rb') # return an open file handle
 
 
 def valid_folder(parser, arg):
     if not os.path.isdir(arg):
-        parser.error("The folder %s does not exist!" % arg)
+        parser.error(f"The folder {arg} does not exist!")
     else:
         return arg
 
@@ -78,7 +78,7 @@ def valid_mic(parser, arg):
 
 def valid_rating(parser, arg):
     if arg < 1 or arg > 5:
-        parser.error('Rating set to {}. Accepted values: 1-5'.format(arg))
+        parser.error(f'Rating set to {arg}. Accepted values: 1-5')
     else:
         return arg
 
@@ -93,7 +93,7 @@ def client_factory(url):
         config.apply_config(client, 'client')
         config.apply_config(client, 'http_client')
     else:
-        raise ValueError('No client for protocol in URL %s' % url)
+        raise ValueError(f'No client for protocol in URL {url}')
     return client
 
 
@@ -104,8 +104,7 @@ def device_factory(record, client):
     if record == MICROPHONE_ARRAY:
         # TODO make Microphone array stream concatenate all the channels to only one
         raise ValueError('')
-        device = None
-        # device = MicArrayDevice(client)
+            # device = MicArrayDevice(client)
 
     if record == MICROPHONE:
         device = MicDevice(client)
@@ -154,14 +153,14 @@ def stream(voysis_client, file=None, record=None):
     if file is not None:
         record = MICROPHONE_DUMMY
     device = device_factory(record, voysis_client)
-    if isinstance(device, MicDevice) or isinstance(device, MicArrayDevice):
+    if isinstance(device, (MicDevice, MicArrayDevice)):
         streamer = stream_mic
     if isinstance(device, FileDevice):
         device.wav_file = file
         streamer = stream_file
     durations = {}
     result = streamer(voysis_client, device, durations)
-    print('Durations: ' + (json.dumps(durations)))
+    print(f'Durations: {json.dumps(durations)}')
     voysis_client.send_feedback(result['id'], durations=durations)
     return result, result['id'], result['conversationId']
 
@@ -225,13 +224,13 @@ def create_parser():
                         help="Sends all the wav files from a folder",
                         metavar="DIR",
                         type=lambda x: valid_folder(parser, x))
-    query_parser.add_argument("-r",
-                        "--record",
-                        help="Record from mic and send audio stream. Values: {}, {}, {}".format(MICROPHONE,
-                                                                                                MICROPHONE_ARRAY,
-                                                                                                MICROPHONE_DUMMY),
-                        default="{}".format(MICROPHONE),
-                        type=lambda x: valid_mic(parser, x))
+    query_parser.add_argument(
+        "-r",
+        "--record",
+        help=f"Record from mic and send audio stream. Values: {MICROPHONE}, {MICROPHONE_ARRAY}, {MICROPHONE_DUMMY}",
+        default=f"{MICROPHONE}",
+        type=lambda x: valid_mic(parser, x),
+    )
     feedback_parser = subparser.add_parser('feedback', help='Send feedback for a particular query.')
     feedback_parser.add_argument("--query-id",
                         dest="query_id",
@@ -258,7 +257,7 @@ def main():
             if not query_id:
                 print("You must specify the ID of a query to provide feedback for.")
                 raise SystemExit(1)
-            print("Sending feedback for query ID {}".format(query_id))
+            print(f"Sending feedback for query ID {query_id}")
             response = feedback(voysis_client, query_id, args.rating, args.description)
             print(response)
         elif args.subcommand == 'query':
@@ -275,11 +274,11 @@ def main():
                 write_context(saved_context, 'context.json')
             else:
                 for root, dirs, files in os.walk(args.wav_dir):
-                    log.info('Streaming files from folder {} over {}'.format(args.wav_dir, args.api_flavour))
+                    log.info(f'Streaming files from folder {args.wav_dir} over {args.api_flavour}')
                     for file in files:
                         if file.endswith('.wav'):
                             file_path = os.path.join(args.wav_dir, file)
-                            log.info('Streaming {}'.format(file_path))
+                            log.info(f'Streaming {file_path}')
                             response, query_id, conversation_id = stream(voysis_client, open(file_path, 'rb'))
                             json.dump(response, sys.stdout, indent=4)
         else:

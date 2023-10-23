@@ -55,7 +55,7 @@ class WSClient(client.Client):
 
     def on_ws_message(self, web_socket, message):
         json_msg = json.loads(message)
-        if 'response' == json_msg['type']:
+        if json_msg['type'] == 'response':
             if int(json_msg['responseCode']) > 299:
                 self._error = client.ClientError(
                     "Request {requestId} failed with status code {responseCode}: {responseMessage}".format(**json_msg)
@@ -69,11 +69,11 @@ class WSClient(client.Client):
                 )
             except KeyError:
                 pass
-        elif 'notification' == json_msg['type']:
+        elif json_msg['type'] == 'notification':
             notification_type = json_msg['notificationType']
-            if 'query_complete' == notification_type:
+            if notification_type == 'query_complete':
                 self._completed_query = json_msg['entity']
-            self._update_state(notification_type, 'vad_stop' != notification_type)
+            self._update_state(notification_type, notification_type != 'vad_stop')
 
     def on_ws_error(self, web_socket, error):
         try:
@@ -141,11 +141,10 @@ class WSClient(client.Client):
             self._wait_for_event('query completion')
             completed_query = self._completed_query
             self._completed_query = None
-            if completed_query:
-                self._update_current_context(completed_query)
-                return completed_query
-            else:
-                raise client.ClientError("Query failed {}".format(self._complete_reason))
+            if not completed_query:
+                raise client.ClientError(f"Query failed {self._complete_reason}")
+            self._update_current_context(completed_query)
+            return completed_query
         except OSError as error:
             raise client.ClientError(error.strerror)
         except websocket.WebSocketConnectionClosedException as error:
@@ -167,15 +166,14 @@ class WSClient(client.Client):
 
     def _wait_for_event(self, message):
         if not self._event.wait(self._timeout):
-            raise client.ClientError("Timed out waiting on " + message)
+            raise client.ClientError(f"Timed out waiting on {message}")
         if self._error:
             raise self._error
 
     def _update_state(self, complete_reason=None, response_ready=True):
         if complete_reason:
             self._complete_reason = complete_reason
-        notification_handler = self._notification_handler
-        if notification_handler:
+        if notification_handler := self._notification_handler:
             notification_handler(self._complete_reason)
         if response_ready:
             self._event.set()

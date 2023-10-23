@@ -31,7 +31,7 @@ class UserAgent:
         :return: This user agent instance
         """
         if not(re.match("^[-a-zA-Z0-9_.]+/[a-zA-Z0-9][-a-zA-Z0-9_.]*$", user_agent_app)):
-            raise ValueError("Invalid user agent app value " + user_agent_app)
+            raise ValueError(f"Invalid user agent app value {user_agent_app}")
         else:
-            self.__user_agent = self.__user_agent + " " + user_agent_app
+            self.__user_agent = f"{self.__user_agent} {user_agent_app}"
         return self

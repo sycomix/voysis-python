@@ -13,10 +13,10 @@ from voysis.device.mic_device import MicDevice
 SOUND_SPEED = 343.2
 
 MIC_DISTANCE_6P1 = 0.064
-MAX_TDOA_6P1 = MIC_DISTANCE_6P1 / float(SOUND_SPEED)
+MAX_TDOA_6P1 = MIC_DISTANCE_6P1 / SOUND_SPEED
 
 MIC_DISTANCE_4 = 0.08127
-MAX_TDOA_4 = MIC_DISTANCE_4 / float(SOUND_SPEED)
+MAX_TDOA_4 = MIC_DISTANCE_4 / SOUND_SPEED
 
 
 class MicArrayDevice(MicDevice):
@@ -28,20 +28,19 @@ class MicArrayDevice(MicDevice):
             print(i, name, dev['maxInputChannels'], dev['maxOutputChannels'])
             #if dev['maxInputChannels'] == self.channels:
             if 'ReSpeaker MicArray UAC2.0' in dev['name']:
-                print('Use {}'.format(name))
+                print(f'Use {name}')
                 self.device_index = i
                 break
         if self.device_index is None:
-            raise ValueError('can not find input device with {} channel(s)'.format(self.channels))
+            raise ValueError(f'can not find input device with {self.channels} channel(s)')
 
     def generate_frames(self):
         self.quit_event.clear()
         while not self.quit_event.is_set():
-            frames = self.queue.get()
-            if not frames:
+            if frames := self.queue.get():
+                yield np.fromstring(frames, dtype='int16')
+            else:
                 break
-            frames = np.fromstring(frames, dtype='int16')
-            yield frames
 
     # def __enter__(self):
     #     self.start()
@@ -84,21 +83,11 @@ class MicArrayDevice(MicDevice):
                 theta[i] = math.asin(tau[i] / MAX_TDOA_4) * 180 / math.pi
 
             if np.abs(theta[0]) < np.abs(theta[1]):
-                if theta[1] > 0:
-                    best_guess = (theta[0] + 360) % 360
-                else:
-                    best_guess = (180 - theta[0])
+                best_guess = (theta[0] + 360) % 360 if theta[1] > 0 else (180 - theta[0])
             else:
-                if theta[0] < 0:
-                    best_guess = (theta[1] + 360) % 360
-                else:
-                    best_guess = (180 - theta[1])
-
+                best_guess = (theta[1] + 360) % 360 if theta[0] < 0 else (180 - theta[1])
                 best_guess = (best_guess + 90) % 360
 
-
-        elif self.channels == 2:
-            pass
 
         return best_guess
 
